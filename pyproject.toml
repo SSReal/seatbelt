@@ -1,9 +1,7 @@
 [project]
-name = "react-ive"
+name = "seatbelt"
 version = "0.1.0"
-description = "Add your description here"
+description = "Collection of harness frameworks for building agents with Python."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [
-    "openai>=2.37.0",
-]
+dependencies = ["openai>=2.37.0"]
