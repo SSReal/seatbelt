@@ -150,6 +150,7 @@ class REPL:
         allowed_dirs: Optional[List[str]] = None,
         allowed_modules: Optional[Set[str]] = None,
         blocked_modules: Optional[Set[str]] = None,
+        cwd: Optional[str] = None,
     ):
         """
         Initialize REPL with optional directory whitelist and module controls.
@@ -158,9 +159,22 @@ class REPL:
             allowed_dirs: List of directories the REPL can access. Defaults to current directory.
             allowed_modules: Additional modules to allow importing.
             blocked_modules: Additional modules to block from importing.
+            cwd: Optional working directory to change to (must be in allowed_dirs).
         """
         self.file_access = SafeFileAccess(allowed_dirs)
         self.import_interceptor = ImportInterceptor(allowed_modules, blocked_modules)
+
+        # Change working directory if specified
+        if cwd:
+            if not self.file_access._is_path_allowed(cwd):
+                raise ValueError(
+                    f"Working directory '{cwd}' is not in allowed directories."
+                )
+            os.chdir(cwd)
+            self.cwd = cwd
+        else:
+            self.cwd = os.getcwd()
+
         self.namespace = self._create_safe_namespace()
 
     def _create_safe_namespace(self) -> dict:
@@ -245,10 +259,11 @@ if __name__ == "__main__":
     # allowed_dirs = ["/Users/sajals/Documents/Dev/agents_exp/seatbelt"]
     # allowed_modules = {"numpy", "pandas"}  # Add to defaults
     # blocked_modules = {"json"}  # Remove from defaults
-    # repl = REPL(allowed_dirs=allowed_dirs, allowed_modules=allowed_modules, blocked_modules=blocked_modules)
+    # repl = REPL(allowed_dirs=allowed_dirs, allowed_modules=allowed_modules, blocked_modules=blocked_modules, cwd=allowed_dirs[0])
 
     repl = REPL()  # Defaults: current directory only, safe modules only
     print("REPL initialized with security controls enabled.")
+    print(f"Working directory: {repl.cwd}")
     print(f"Allowed directories: {repl.file_access.allowed_dirs}")
     print(
         f"Allowed modules: {', '.join(sorted(repl.import_interceptor.allowed_modules))}"

@@ -8,7 +8,7 @@ class SimpleHarness(Harness):
     # The simplest harness possible - just runs a chat loop with the LLM and prints the output
     def __init__(self, model_name: str, *args, **kwargs):
         super().__init__(model_name)
-        self.sys_prompt = kwargs.get("sys_prompt", "You are a helpful assistant.")
+        self.sys_prompt = kwargs.get("system_prompt", "You are a helpful assistant.")
 
     async def run(self):
         self.messages = [

@@ -10,7 +10,7 @@ class ReactHarness(Harness):
         super().__init__(model_name, *args, **kwargs)
         self.tools: Dict[str, Tool] = kwargs.get("tools", {})
         self.tool_defs = [tool.schema for tool in self.tools.values()]
-        self.sys_prompt = kwargs.get("sys_prompt", "You are a helpful assistant.")
+        self.sys_prompt = kwargs.get("system_prompt", "You are a helpful assistant.")
         self.messages = [
             {
                 "role": "system",
