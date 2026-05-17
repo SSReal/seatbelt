@@ -10,7 +10,7 @@ class Tool:
     def __init__(self, fn, name=None, description=None, schema=None):
         self.fn = fn
         self.name = name or fn.__name__
-        self.description = description or fn.__doc__
+        self.description = description or fn.__doc__ or ""
         self.schema: ChatCompletionToolParam = schema or self.generate_schema()
 
     def _get_type_string(self, type_obj):
@@ -52,9 +52,7 @@ class Tool:
                     param_type = self._get_type_string(actual_type)
                 else:
                     param_type = self._get_type_string(annotation)
-                    param_description = (
-                        annotation.__doc__ if hasattr(annotation, "__doc__") else ""
-                    )
+                    param_description = ""
 
             defs[name] = {
                 "type": param_type,
@@ -73,7 +71,10 @@ class Tool:
         )
 
     def __call__(self, *args, **kwargs):
-        return self.fn(*args, **kwargs)
+        try:
+            return str(self.fn(*args, **kwargs))
+        except Exception as e:
+            return f"Error calling tool {self.name}: {str(e)}"
 
 
 def generate_tool_prompt(tools: Dict[str, Tool]):
@@ -109,6 +110,8 @@ def discover_tools(folder_path: str) -> Dict[str, Tool]:
                     tool = Tool(attr)
                     tools[tool.name] = tool
 
+    for t in tools:
+        print(f"Discovered tool: {t}, schema: {tools[t].schema}")
     return tools
 
 

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 from llm.llm import LLM
+from openai.types.chat import ChatCompletion
 
 
 class Exit(Exception):
@@ -23,5 +24,7 @@ class Harness(ABC):
             raise Exit
         return user_input
 
-    def display_output(self, message):
+    def display_output(self, message: ChatCompletion):
+        if hasattr(message.choices[0].message, "reasoning_content"):
+            print(f"LLM reasoning: {message.choices[0].message.reasoning_content}")  # type: ignore
         print(f"LLM: {message.choices[0].message.content}")

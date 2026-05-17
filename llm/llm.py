@@ -1,6 +1,8 @@
 import asyncio
+from typing import Any, Dict, List, Optional
 
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, Omit
+from openai.types.chat import ChatCompletionToolParam
 
 
 class LLM:
@@ -9,9 +11,13 @@ class LLM:
         self.model_name = model_name
         self.client = AsyncOpenAI(api_key="dummy", base_url="http://localhost:10000/v1")
 
-    async def __call__(self, messages):
+    async def __call__(
+        self, messages, tools: Optional[List[ChatCompletionToolParam]] = None
+    ):
         return await self.client.chat.completions.create(
-            model=self.model_name, messages=messages
+            model=self.model_name,
+            messages=messages,
+            tools=tools or [],
         )
 
 
