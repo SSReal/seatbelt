@@ -28,7 +28,10 @@ class ReactHarness(Harness):
                 break
             self.messages.append({"role": "user", "content": user_input})
             response = await self.llm(self.messages, tools=self.tool_defs)
-            while response.choices[0].message.tool_calls:
+            while (
+                response.choices[0].message.tool_calls
+                and response.choices[0].finish_reason != "stop"
+            ):
                 self.messages.append(
                     {
                         "role": "assistant",
