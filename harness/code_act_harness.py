@@ -6,8 +6,8 @@ from repl.REPL import REPL
 
 
 class CodeActHarness(Harness):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, model_name, *args, **kwargs):
+        super().__init__(model_name, *args, **kwargs)
         self.allowed_modules = kwargs.get("allowed_modules", set())
         self.blocked_modules = kwargs.get("blocked_modules", set())
         self.sys_prompt = kwargs.get(
@@ -15,7 +15,7 @@ class CodeActHarness(Harness):
             "You are a helpful assistant that executes Python code in a secure REPL environment. Only use the provided safe modules and file access methods. Do not attempt to import blocked modules or access unauthorized files.",
         )
 
-        self.sys_prompt += """
+        self.code_prompt = """
 To run python code, wrap it in triple backticks with 'python' after the first three backticks, like this:
 ```python
 # your code here
@@ -25,7 +25,10 @@ It behaves like a jupyter notebook cell, the last expression's value will be ret
 Don't use print statements, just write the expression you want the result of. 
 You can have multiple lines of code, but only the last expression's value will be returned. 
 If you don't want to return anything, end with a statement instead of an expression.
+
+ONLY USE THIS FEATURE FOR ACTUAL CODE YOU WANT TO EXECUTE. DO NOT USE IT FOR ANYTHING ELSE. IF YOU JUST WANT TO RETURN TEXT, DO NOT WRAP IT IN A CODE BLOCK.
 """
+        self.sys_prompt += self.code_prompt
 
         # Set allowed_dirs to project root's tmp folder (independent of cwd)
         project_root = Path(__file__).parent.parent
