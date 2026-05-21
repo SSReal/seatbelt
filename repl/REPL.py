@@ -220,6 +220,15 @@ class REPL:
             last_stmt = tree.body[-1]
             is_last_expr = isinstance(last_stmt, ast.Expr)
 
+            # Check if the last statement is a print call
+            is_print_call = False
+            if is_last_expr and isinstance(last_stmt.value, ast.Call):
+                if (
+                    isinstance(last_stmt.value.func, ast.Name)
+                    and last_stmt.value.func.id == "print"
+                ):
+                    is_print_call = True
+
             if is_last_expr:
                 # Execute all but the last statement
                 if len(tree.body) > 1:
@@ -232,19 +241,36 @@ class REPL:
                         self.namespace,
                     )
 
-                # Evaluate the last expression and get its value
-                result = eval(
-                    compile(
-                        ast.Expression(body=last_stmt.value),
-                        filename="<ast>",
-                        mode="eval",
-                    ),
-                    self.namespace,
-                )
+                if is_print_call:
+                    # Get the first argument to print and return its repr
+                    print_call = last_stmt.value
+                    if hasattr(print_call, "args") and print_call.args:  # type: ignore sorry
+                        # Evaluate the first argument
+                        result = eval(
+                            compile(
+                                ast.Expression(body=print_call.args[0]),  # type: ignore sorry
+                                filename="<ast>",
+                                mode="eval",
+                            ),
+                            self.namespace,
+                        )
+                        return repr(result)
+                    else:
+                        return None
+                else:
+                    # Evaluate the last expression and get its value
+                    result = eval(
+                        compile(
+                            ast.Expression(body=last_stmt.value),
+                            filename="<ast>",
+                            mode="eval",
+                        ),
+                        self.namespace,
+                    )
 
-                # Display result if not None (like Jupyter)
-                if result is not None:
-                    return repr(result)
+                    # Display result if not None (like Jupyter)
+                    if result is not None:
+                        return repr(result)
             else:
                 # No expression at the end, just execute everything
                 exec(code, self.namespace)

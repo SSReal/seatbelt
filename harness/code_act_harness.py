@@ -12,7 +12,7 @@ class CodeActHarness(Harness):
         self.blocked_modules = kwargs.get("blocked_modules", set())
         self.sys_prompt = kwargs.get(
             "system_prompt",
-            "You are a helpful assistant that executes Python code in a secure REPL environment. Only use the provided safe modules and file access methods. Do not attempt to import blocked modules or access unauthorized files.",
+            "You are a helpful assistant that answers the user queries effectively. ",
         )
 
         self.code_prompt = """
@@ -20,6 +20,9 @@ To run python code, wrap it in triple backticks with 'python' after the first th
 ```python
 # your code here
 ```
+
+ALL CODE MUST BE WRAPPED IN A PYTHON CODE BLOCK TO BE EXECUTED. DO NOT EVER RETURN CODE WITHOUT WRAPPING IT IN A PYTHON CODE BLOCK.
+
 Only use this format for code you want to execute. Do not include any other text in the code block.
 It behaves like a jupyter notebook cell, the last expression's value will be returned as the result. 
 Don't use print statements, just write the expression you want the result of. 
@@ -28,7 +31,6 @@ If you don't want to return anything, end with a statement instead of an express
 
 ONLY USE THIS FEATURE FOR ACTUAL CODE YOU WANT TO EXECUTE. DO NOT USE IT FOR ANYTHING ELSE. IF YOU JUST WANT TO RETURN TEXT, DO NOT WRAP IT IN A CODE BLOCK.
 """
-        self.sys_prompt += self.code_prompt
 
         # Set allowed_dirs to project root's tmp folder (independent of cwd)
         project_root = Path(__file__).parent.parent
@@ -41,11 +43,10 @@ ONLY USE THIS FEATURE FOR ACTUAL CODE YOU WANT TO EXECUTE. DO NOT USE IT FOR ANY
             blocked_modules=self.blocked_modules,
             cwd=str(self.tmp_dir),
         )
+
+    def setup_messages(self):
         self.messages = [
-            {
-                "role": "system",
-                "content": self.sys_prompt,
-            }
+            {"role": "system", "content": self.sys_prompt + self.code_prompt}
         ]
 
     async def run(self):
