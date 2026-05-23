@@ -4,6 +4,27 @@ from pathlib import Path
 from typing import Optional, List, Set
 import builtins
 import sys
+from io import StringIO
+
+
+class TeeOutput:
+    """Writes to both a StringIO buffer and original stdout simultaneously."""
+
+    def __init__(self, original_stdout, buffer):
+        self.original_stdout = original_stdout
+        self.buffer = buffer
+
+    def write(self, text):
+        self.buffer.write(text)
+        self.original_stdout.write(text)
+        self.original_stdout.flush()
+
+    def flush(self):
+        self.buffer.flush()
+        self.original_stdout.flush()
+
+    def isatty(self):
+        return self.original_stdout.isatty()
 
 
 class SafeFileAccess:
@@ -209,6 +230,7 @@ class REPL:
         }
 
     def run(self, code: str):
+        original_stdout = sys.stdout
         try:
             # Parse the code to find the last expression
             tree = ast.parse(code)
@@ -216,50 +238,33 @@ class REPL:
             if not tree.body:
                 return None
 
-            # Check if the last statement is an expression
-            last_stmt = tree.body[-1]
-            is_last_expr = isinstance(last_stmt, ast.Expr)
+            # Capture stdout while also printing to console
+            captured_output = StringIO()
+            original_stdout = sys.stdout
+            sys.stdout = TeeOutput(original_stdout, captured_output)
 
-            # Check if the last statement is a print call
-            is_print_call = False
-            if is_last_expr and isinstance(last_stmt.value, ast.Call):
-                if (
-                    isinstance(last_stmt.value.func, ast.Name)
-                    and last_stmt.value.func.id == "print"
-                ):
-                    is_print_call = True
+            try:
+                # Check if the last statement is an expression
+                last_stmt = tree.body[-1]
+                is_last_expr = isinstance(last_stmt, ast.Expr)
 
-            if is_last_expr:
-                # Execute all but the last statement
-                if len(tree.body) > 1:
-                    exec(
-                        compile(
-                            ast.Module(body=tree.body[:-1], type_ignores=[]),
-                            filename="<ast>",
-                            mode="exec",
-                        ),
-                        self.namespace,
-                    )
+                last_expr_result = None
+                has_last_expr = False
 
-                if is_print_call:
-                    # Get the first argument to print and return its repr
-                    print_call = last_stmt.value
-                    if hasattr(print_call, "args") and print_call.args:  # type: ignore sorry
-                        # Evaluate the first argument
-                        result = eval(
+                if is_last_expr:
+                    # Execute all but the last statement
+                    if len(tree.body) > 1:
+                        exec(
                             compile(
-                                ast.Expression(body=print_call.args[0]),  # type: ignore sorry
+                                ast.Module(body=tree.body[:-1], type_ignores=[]),
                                 filename="<ast>",
-                                mode="eval",
+                                mode="exec",
                             ),
                             self.namespace,
                         )
-                        return repr(result)
-                    else:
-                        return None
-                else:
+
                     # Evaluate the last expression and get its value
-                    result = eval(
+                    last_expr_result = eval(
                         compile(
                             ast.Expression(body=last_stmt.value),
                             filename="<ast>",
@@ -267,16 +272,33 @@ class REPL:
                         ),
                         self.namespace,
                     )
+                    has_last_expr = True
+                else:
+                    # No expression at the end, just execute everything
+                    exec(code, self.namespace)
 
-                    # Display result if not None (like Jupyter)
-                    if result is not None:
-                        return repr(result)
-            else:
-                # No expression at the end, just execute everything
-                exec(code, self.namespace)
-                return None
+            finally:
+                sys.stdout = original_stdout
+
+            # Combine output: prints first, then last expression
+            output_parts = []
+
+            printed_text = captured_output.getvalue()
+            if printed_text:
+                output_parts.append(printed_text)
+
+            # Add last expression result if not None (like Jupyter)
+            if has_last_expr and last_expr_result is not None:
+                # Ensure proper separation if there's already printed output
+                if output_parts and not output_parts[-1].endswith("\n"):
+                    output_parts.append("\n")
+                output_parts.append(repr(last_expr_result))
+
+            result = "".join(output_parts)
+            return result if result else None
 
         except Exception as e:
+            sys.stdout = original_stdout
             return f"{type(e).__name__}: {e}"
 
 

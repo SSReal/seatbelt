@@ -117,6 +117,9 @@ class CodeActSubagentHarness(CodeActHarness):
             self.messages.append(
                 {"role": "assistant", "content": response.choices[0].message.content}
             )
+            print(
+                f"Assistant response in REPL:\n{self.repl.namespace['final_content']}"
+            )
             self.display_output(response)
 
 
