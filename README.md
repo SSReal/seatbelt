@@ -139,6 +139,27 @@ Agents automatically log message history:
 agent.log_messages()  # Saves conversation to messages_log.txt
 ```
 
+## How to run
+
+1. Change the OpenAI API configuration in `llm.py`. (Any OpenAI compatible API works, including Ollama, Llama-cpp, etc.)
+2. Select the harness to run:
+   a. Simple Harness (simple_harness.py)
+   b. ReAct Harness (react_harness.py)
+   c. Code-Act Harness (code_act_harness.py)
+   d. Code-Act Subagent Harness (code_act_subagent_harness.py)
+   e. Recursive Language Model Harness (rlm_harness.py)
+3. Run the selected python file
+
+    ```python
+    python -m harness.<selected_file_name_without_extension>
+    ```
+
+    For eg -
+
+    ```python
+    python -m harness.react_harness
+    ```
+
 ## Contributing
 
 Contributions are welcome! Please ensure:
