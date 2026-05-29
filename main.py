@@ -1,5 +1,5 @@
 def main():
-    print("Hello from react-ive!")
+    print("Hello from seatbelt!")
 
 
 if __name__ == "__main__":
