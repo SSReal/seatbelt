@@ -17,23 +17,24 @@ class CodeActSubagentHarness(CodeActHarness):
     def setup(self):
         if self.is_subagent:
             self.sys_prompt = (
-                f"\nYou are an agent whose aim is fixed and given by the main agent. Use the tools at your disposal and run code to achieve this objective."
+                f"\nYou are an agent whose aim is fixed and given by the main agent. Use the tools at your disposal and run code to achieve this objective. "
                 "Just complete the task without any extra commentary and return the final result. Do not explain your reasoning or thought process."
             )
-            self.sys_prompt += self.code_prompt
 
         self.subagent_prompt = (
             "\nIf your task can be split into multiple independent units, spawn subagents for doing those tasks. To spawn a subagent, use the following format in your response:\n\n"
             f"```subagent:<id_for_subagent>\n<query for the subagent> \n```\n\n"
             "The query should be a clear and concise description of the task you want the subagent to accomplish."
             "The subagent will be created with the same capabilities as you, but with a different system prompt and a fresh context, and will return the answer to the query you specified."
+            "CRITICAL: THE SUBAGENTS WILL NOT HAVE ACCESS TO THE MAIN AGENT'S CONTEXT OR MEMORY, SO MAKE SURE TO SPECIFY THE QUERY FOR THE SUBAGENT CLEARLY AND IN FULL, AS IF YOU WERE ASKING AN INDEPENDENT AGENT WITHOUT ANY PRIOR KNOWLEDGE OF THE PROBLEM."
             "Then you can combine the results from different subagents and return the final answer to the main agent. Remember, the subagent's goal is to complete the query you give it, so make sure to specify it clearly."
         )
-        self.sys_prompt += self.subagent_prompt
+
+    def setup_messages(self):
         self.messages = [
             {
                 "role": "system",
-                "content": self.sys_prompt,
+                "content": self.sys_prompt + self.code_prompt + self.subagent_prompt,
             }
         ]
         if self.is_subagent:
@@ -92,6 +93,7 @@ class CodeActSubagentHarness(CodeActHarness):
             return await self.process_response()
 
     async def run_agent(self):
+        self.setup_messages()
         print(f"Running CodeActSubagentHarness with model {self.model_name}")
         final_res = await self.process_response()
         print("\n--------\n")
@@ -102,6 +104,7 @@ class CodeActSubagentHarness(CodeActHarness):
         )
 
     async def run(self):
+        self.setup_messages()
         print(f"Running CodeActHarness with model {self.model_name}")
         while True:
             try:
@@ -113,6 +116,9 @@ class CodeActSubagentHarness(CodeActHarness):
             response = await self.process_response()
             self.messages.append(
                 {"role": "assistant", "content": response.choices[0].message.content}
+            )
+            print(
+                f"Assistant response in REPL:\n{self.repl.namespace['final_content']}"
             )
             self.display_output(response)
 

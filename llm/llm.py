@@ -14,6 +14,7 @@ class LLM:
     async def __call__(
         self, messages, tools: Optional[List[ChatCompletionToolParam]] = None
     ):
+        print("LLM received messages:", messages[-1].get("content", "No content"))
         return await self.client.chat.completions.create(
             model=self.model_name,
             messages=messages,

@@ -4,6 +4,27 @@ from pathlib import Path
 from typing import Optional, List, Set
 import builtins
 import sys
+from io import StringIO
+
+
+class TeeOutput:
+    """Writes to both a StringIO buffer and original stdout simultaneously."""
+
+    def __init__(self, original_stdout, buffer):
+        self.original_stdout = original_stdout
+        self.buffer = buffer
+
+    def write(self, text):
+        self.buffer.write(text)
+        self.original_stdout.write(text)
+        self.original_stdout.flush()
+
+    def flush(self):
+        self.buffer.flush()
+        self.original_stdout.flush()
+
+    def isatty(self):
+        return self.original_stdout.isatty()
 
 
 class SafeFileAccess:
@@ -209,6 +230,7 @@ class REPL:
         }
 
     def run(self, code: str):
+        original_stdout = sys.stdout
         try:
             # Parse the code to find the last expression
             tree = ast.parse(code)
@@ -216,41 +238,67 @@ class REPL:
             if not tree.body:
                 return None
 
-            # Check if the last statement is an expression
-            last_stmt = tree.body[-1]
-            is_last_expr = isinstance(last_stmt, ast.Expr)
+            # Capture stdout while also printing to console
+            captured_output = StringIO()
+            original_stdout = sys.stdout
+            sys.stdout = TeeOutput(original_stdout, captured_output)
 
-            if is_last_expr:
-                # Execute all but the last statement
-                if len(tree.body) > 1:
-                    exec(
+            try:
+                # Check if the last statement is an expression
+                last_stmt = tree.body[-1]
+                is_last_expr = isinstance(last_stmt, ast.Expr)
+
+                last_expr_result = None
+                has_last_expr = False
+
+                if is_last_expr:
+                    # Execute all but the last statement
+                    if len(tree.body) > 1:
+                        exec(
+                            compile(
+                                ast.Module(body=tree.body[:-1], type_ignores=[]),
+                                filename="<ast>",
+                                mode="exec",
+                            ),
+                            self.namespace,
+                        )
+
+                    # Evaluate the last expression and get its value
+                    last_expr_result = eval(
                         compile(
-                            ast.Module(body=tree.body[:-1], type_ignores=[]),
+                            ast.Expression(body=last_stmt.value),
                             filename="<ast>",
-                            mode="exec",
+                            mode="eval",
                         ),
                         self.namespace,
                     )
+                    has_last_expr = True
+                else:
+                    # No expression at the end, just execute everything
+                    exec(code, self.namespace)
 
-                # Evaluate the last expression and get its value
-                result = eval(
-                    compile(
-                        ast.Expression(body=last_stmt.value),
-                        filename="<ast>",
-                        mode="eval",
-                    ),
-                    self.namespace,
-                )
+            finally:
+                sys.stdout = original_stdout
 
-                # Display result if not None (like Jupyter)
-                if result is not None:
-                    return repr(result)
-            else:
-                # No expression at the end, just execute everything
-                exec(code, self.namespace)
-                return None
+            # Combine output: prints first, then last expression
+            output_parts = []
+
+            printed_text = captured_output.getvalue()
+            if printed_text:
+                output_parts.append(printed_text)
+
+            # Add last expression result if not None (like Jupyter)
+            if has_last_expr and last_expr_result is not None:
+                # Ensure proper separation if there's already printed output
+                if output_parts and not output_parts[-1].endswith("\n"):
+                    output_parts.append("\n")
+                output_parts.append(repr(last_expr_result))
+
+            result = "".join(output_parts)
+            return result if result else None
 
         except Exception as e:
+            sys.stdout = original_stdout
             return f"{type(e).__name__}: {e}"
 
 
