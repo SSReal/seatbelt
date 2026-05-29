@@ -5,11 +5,11 @@ A collection of harness frameworks for building AI agents with Python. Seatbelt 
 ## Features
 
 - **Multiple Harness Implementations**: Choose from different agent architectures:
-    - **ReAct Harness**: Reasoning + Acting framework for agentic behavior
-    - **RLM Harness**: Reinforcement Learning Model integration
-    - **CodeAct Harness**: Code-based action execution
-    - **Simple Harness**: Lightweight baseline implementation
-    - **Code Act Subagent Harness**: Subagent-based architecture
+    - **Simple Harness**: Lightweight baseline implementation for initial testing
+    - **ReAct Harness**: Agentic Behavior (tool-use) in a Reason-Act loop.
+    - **CodeAct Harness**: Code running framework on top of ReAct.
+    - **Code Act Subagent Harness**: Code-Act loop augmented with subagents.
+    - **RLM Harness**: Recursive Language Models implementation.
 
 - **Tool Integration**: Easy-to-use tool system for extending agent capabilities
 - **LLM Integration**: Built-in support for OpenAI models and extensible LLM interface
@@ -23,13 +23,13 @@ seatbelt/
 ├── harness/                    # Core harness frameworks
 │   ├── harness.py             # Base Harness abstract class
 │   ├── react_harness.py       # ReAct (Reasoning + Acting) implementation
-│   ├── rlm_harness.py         # Reinforcement Learning Model harness
-│   ├── code_act_harness.py    # Code-based action execution
-│   ├── code_act_subagent_harness.py  # Subagent architecture
+│   ├── rlm_harness.py         # Recursive Language Model harness
+│   ├── code_act_harness.py    # Code-Act loop
+│   ├── code_act_subagent_harness.py  # Code-Act with Subagents
 │   └── simple_harness.py      # Simple/baseline implementation
-├── tools/                      # Tool system for agents
+├── tools/                      # Tool framework for agents
 │   ├── tool.py                # Base Tool class
-│   └── user_tools/            # Custom user-defined tools
+│   └── user_tools/            # Custom user-defined tools (examples)
 │       ├── greet.py           # Greeting utility
 │       ├── math.py            # Mathematical operations
 │       └── strings.py         # String manipulation
@@ -108,21 +108,11 @@ tool = Tool(my_tool, name="my_tool", description="Processes text input")
 
 ### Available Tools
 
-The project includes pre-built utility tools:
+The project includes pre-built example utility tools:
 
 - **math.py**: Mathematical operations
 - **strings.py**: String manipulation utilities
 - **greet.py**: Greeting functions
-
-## Running Examples
-
-```bash
-# Run the main entry point
-python main.py
-
-# Interactive REPL environment
-python repl/REPL.py
-```
 
 ## Architecture
 
@@ -157,10 +147,6 @@ Contributions are welcome! Please ensure:
 - New harnesses extend the base `Harness` class
 - Tools implement the `Tool` interface
 - Async patterns are used for I/O operations
-
-## License
-
-[Add appropriate license information]
 
 ## Support
 
